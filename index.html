@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Transfer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Acquisition" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <style>
+        @font-face {
+            font-family: 'MyFont';
+            src: url('SF-HEBREW-ROUNDED.TTF') format('truetype');
+        }
+
+        :root {
+            --brand-blue: #007bff;
+            --background-color: #000000;
+            --container-bg: #111111;
+            --keypad-bg: #3a3a3c;
+            --keypad-bg-active: #5c5c5e;
+            --text-color: #ffffff;
+            --text-color-light: #8e8e93;
+            --action-button-disabled-opacity: 0.4;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .app-container {
+            width: 100%;
+            height: 100%;
+            background-color: var(--container-bg);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 40px 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 0.5s cubic-bezier(0.25, 1, 0.5, 1), transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .screen.hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+
+        /* Keypad Screen */
+        #keypad-screen {
+            justify-content: flex-end;
+        }
+
+        .amount-display-wrapper {
+            width: 100%;
+            text-align: center;
+            margin-bottom: auto;
+            padding-top: 80px;
+        }
+
+        .amount-display-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-color);
+        }
+
+        .currency-symbol {
+            font-size: 4rem;
+            font-weight: 300;
+            color: var(--text-color-light);
+            margin-right: 5px;
+            transform: translateY(-8px);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        #amount-display {
+            font-size: 6rem;
+            font-weight: 200;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            letter-spacing: -2px;
+            transition: transform 0.2s ease, font-size 0.3s ease;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+            font-family: MyFont;
+        }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 20px;
+        }
+
+        .keypad-button {
+            background-color: var(--keypad-bg);
+            color: var(--text-color);
+            border: none;
+            border-radius: 50%;
+            font-size: 2.2rem;
+            font-weight: 400;
+            cursor: pointer;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .keypad-button:active {
+            background-color: var(--keypad-bg-active);
+            transform: scale(0.95);
+        }
+
+        #backspace-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+        .action-button {
+            width: 100%;
+            max-width: 300px;
+            padding: 18px;
+            background-color: var(--brand-blue);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 0 25px rgba(0, 123, 255, 0);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .action-button:not(:disabled):active {
+            transform: scale(0.97);
+            box-shadow: 0 0 25px rgba(0, 123, 255, 0.5);
+        }
+
+        .action-button:disabled {
+            opacity: var(--action-button-disabled-opacity);
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        /* Confirmation Screen */
+        #confirmation-screen {
+            justify-content: center;
+            text-align: center;
+        }
+
+        #confirmation-screen h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 0;
+            padding: 0 10px;
+        }
+
+        #confirmation-screen p {
+            font-size: 1.2rem;
+            color: var(--text-color-light);
+            margin-top: 10px;
+            margin-bottom: 50px;
+        }
+
+        .highlight-amount {
+            color: var(--brand-blue);
+            font-weight: 600;
+        }
+
+        .confirmation-buttons {
+            width: 100%;
+            max-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #cancel-steal-btn {
+            background-color: var(--keypad-bg);
+            box-shadow: none;
+        }
+
+        #cancel-steal-btn:active {
+            box-shadow: none;
+        }
+
+        /* Success Screen */
+        #success-screen {
+            justify-content: center; /* Center content vertically */
+            text-align: center;
+            position: relative;
+        }
+
+        .precheck-video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            /* FIX: Changed 'contain' to 'fill' to stretch the video to the entire screen */
+            object-fit: fill; 
+            z-index: 10;
+            pointer-events: none;
+            background: transparent;
+        }
+        
+        .precheck-video.use-blend {
+            mix-blend-mode: screen; 
+        }
+
+        #trigger-final-btn {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+        }
+
+        /* State Management for Success Screen */
+        #success-screen .success-content-wrapper,
+        #success-screen .precheck-video,
+        #success-screen #reset-btn,
+        #success-screen #trigger-final-btn {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        #success-screen.state-looping #loop-video,
+        #success-screen.state-looping #trigger-final-btn {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        #success-screen.state-playing-intro #intro-video {
+            opacity: 1;
+            pointer-events: none;
+        }
+        
+        #success-screen.state-checkmark .success-content-wrapper,
+        #success-screen.state-checkmark #reset-btn {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .success-content-wrapper {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .checkmark-container {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 30px;
+        }
+
+        .checkmark-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 15px rgba(0, 123, 255, 0.5));
+        }
+
+        #checkmark-circle {
+            stroke-dasharray: 283;
+            stroke-dashoffset: 283;
+            stroke-linecap: round;
+            transform-origin: 50% 50%;
+            transform: rotate(-90deg);
+            transition: stroke-dashoffset 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        #checkmark-circle.animate {
+            stroke-dashoffset: 0;
+        }
+
+        #checkmark-path {
+            stroke-dasharray: 65;
+            stroke-dashoffset: 65;
+            transition: stroke-dashoffset 0.4s cubic-bezier(0.65, 1, 0.28, 1) 0.8s;
+        }
+
+        #checkmark-path.animate {
+            stroke-dashoffset: 0;
+        }
+
+        #success-screen h2, #success-screen p {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        #success-screen.state-checkmark h2.animate, #success-screen.state-checkmark p.animate {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #success-screen h2 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--brand-blue);
+            transition: opacity 0.5s ease 1.3s, transform 0.5s ease 1.3s;
+        }
+
+        #success-screen p {
+            font-size: 1.2rem;
+            color: var(--text-color-light);
+            transition: opacity 0.5s ease 1.4s, transform 0.5s ease 1.4s;
+        }
+
+        #reset-btn {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.5s ease 1.8s, transform 0.5s ease 1.8s, box-shadow 0.3s ease;
+        }
+        
+        #success-screen.state-checkmark #reset-btn.animate {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Keypad Screen -->
+        <div id="keypad-screen" class="screen">
+            <div class="amount-display-wrapper">
+                <div class="amount-display-container">
+                    <span class="currency-symbol">$</span>
+                    <span id="amount-display">0</span>
+                </div>
+            </div>
+            <div class="keypad">
+                <button class="keypad-button" data-key="1">1</button>
+                <button class="keypad-button" data-key="2">2</button>
+                <button class="keypad-button" data-key="3">3</button>
+                <button class="keypad-button" data-key="4">4</button>
+                <button class="keypad-button" data-key="5">5</button>
+                <button class="keypad-button" data-key="6">6</button>
+                <button class="keypad-button" data-key="7">7</button>
+                <button class="keypad-button" data-key="8">8</button>
+                <button class="keypad-button" data-key="9">9</button>
+                <button class="keypad-button" data-key=".">.</button>
+                <button class="keypad-button" data-key="0">0</button>
+                <button class="keypad-button" data-key="backspace">
+                    <svg id="backspace-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+                        <line x1="18" y1="9" x2="12" y2="15"></line>
+                        <line x1="12" y1="9" x2="18" y2="15"></line>
+                    </svg>
+                </button>
+            </div>
+            <button id="steal-button" class="action-button" disabled>Transfer</button>
+        </div>
+
+        <!-- Confirmation Screen -->
+        <div id="confirmation-screen" class="screen hidden">
+            <h2>Confirm Transfer</h2>
+            <p>Are you sure you want to steal <span id="confirm-amount" class="highlight-amount"></span>?</p>
+            <div class="confirmation-buttons">
+                <button id="confirm-steal-btn" class="action-button">Confirm</button>
+                <button id="cancel-steal-btn" class="action-button">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Success Screen -->
+        <div id="success-screen" class="screen hidden">
+            <!-- State 1: Looping Video and Button -->
+            <!-- FIX: Added 'muted' for reliable autoplay -->
+            <video id="loop-video" class="precheck-video use-blend" playsinline webkit-playsinline preload="auto" loop>
+                <source src="output_iPhone15_res.mp4" type="video/mp4"/>
+            </video>
+            <button id="trigger-final-btn" class="action-button">Transfer</button>
+            
+            <!-- State 2: Final Intro Video -->
+             <!-- FIX: Added 'muted' for reliable autoplay -->
+            <video id="intro-video" class="precheck-video use-blend" playsinline webkit-playsinline preload="auto">
+                <source src="output_iPhone15_res2.mp4" type="video/mp4"/>
+            </video>
+            
+            <!-- State 3: Checkmark Animation and Final Message -->
+            <div class="success-content-wrapper">
+                <div class="checkmark-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="checkmark-svg" viewBox="0 0 100 100">
+                        <circle id="checkmark-circle" cx="50" cy="50" r="45" stroke="#007bff" stroke-width="5" fill="none"></circle>
+                        <path id="checkmark-path" d="M30 55 L43 70 L70 35" stroke="#007bff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </div>
+                <h2 id="success-amount"></h2>
+                <p id="success-message">Transferred</p>
+            </div>
+            <button id="reset-btn" class="action-button">New Transfer</button>
+        </div>
+    </div>
+
+    <audio id="confirmation-sound" src="confirm.mp3" preload="auto"></audio>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Screen References
+            const keypadScreen = document.getElementById('keypad-screen');
+            const confirmationScreen = document.getElementById('confirmation-screen');
+            const successScreen = document.getElementById('success-screen');
+
+            // Elements
+            const amountDisplay = document.getElementById('amount-display');
+            const keypad = document.querySelector('.keypad');
+            const stealButton = document.getElementById('steal-button');
+            const confirmAmountSpan = document.getElementById('confirm-amount');
+            const confirmStealBtn = document.getElementById('confirm-steal-btn');
+            const cancelStealBtn = document.getElementById('cancel-steal-btn');
+            const successAmount = document.getElementById('success-amount');
+            const successMessage = document.getElementById('success-message');
+            const resetBtn = document.getElementById('reset-btn');
+            const checkmarkCircle = document.getElementById('checkmark-circle');
+            const checkmarkPath = document.getElementById('checkmark-path');
+            const confirmationSound = document.getElementById('confirmation-sound');
+            const loopVideo = document.getElementById('loop-video');
+            const triggerFinalBtn = document.getElementById('trigger-final-btn');
+            const introVideo = document.getElementById('intro-video');
+
+            // State
+            let currentAmountStr = '0';
+            const MAX_CHARS = 12;
+
+            // Helpers
+            const formatForDisplay = (str) => {
+                if (str === '0' || str === '' || str === null) return '0';
+                const parts = str.split('.');
+                const integerPart = parts[0];
+                const decimalPart = parts.length > 1 ? parts[1] : null;
+                const formattedInteger = new Intl.NumberFormat('en-US').format(BigInt(integerPart));
+                if (decimalPart !== null) return `${formattedInteger}.${decimalPart}`;
+                if (str.endsWith('.')) return `${formattedInteger}.`;
+                return formattedInteger;
+            };
+
+            const getFormattedCurrency = (str) => {
+                const value = parseFloat(str);
+                if (isNaN(value)) return '$0.00';
+                return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+            };
+
+            const updateDisplay = () => {
+                const formattedValue = formatForDisplay(currentAmountStr);
+                amountDisplay.style.fontSize = formattedValue.length > 9 ? '4.5rem' : '6rem';
+                amountDisplay.textContent = formattedValue;
+                amountDisplay.style.transform = 'scale(1.05)';
+                setTimeout(() => { amountDisplay.style.transform = 'scale(1)'; }, 100);
+                const amountValue = parseFloat(currentAmountStr);
+                stealButton.disabled = isNaN(amountValue) || amountValue <= 0;
+            };
+
+            const handleKeyPress = (key) => {
+                if (key === 'backspace') {
+                    currentAmountStr = currentAmountStr.length > 1 ? currentAmountStr.slice(0, -1) : '0';
+                } else if (key === '.') {
+                    if (!currentAmountStr.includes('.')) currentAmountStr += '.';
+                } else {
+                    if (currentAmountStr === '0') currentAmountStr = key;
+                    else if (currentAmountStr.replace(/[.,]/g, '').length < MAX_CHARS) currentAmountStr += key;
+                }
+                updateDisplay();
+            };
+
+            const switchScreen = (screenToShow) => {
+                [keypadScreen, confirmationScreen, successScreen].forEach(screen => {
+                    screen.classList.toggle('hidden', screen !== screenToShow);
+                });
+            };
+
+            const playCheckmarkAnimation = () => {
+                successScreen.className = 'screen state-checkmark';
+                const animatedElements = [checkmarkCircle, checkmarkPath, successAmount, successMessage, resetBtn];
+                animatedElements.forEach(el => el.classList.remove('animate'));
+
+                setTimeout(() => {
+                    animatedElements.forEach(el => el.classList.add('animate'));
+                    setTimeout(() => {
+                        confirmationSound.currentTime = 0;
+                        confirmationSound.play().catch(e => console.error("Confirmation sound play failed:", e));
+                    }, 800);
+                }, 10);
+            };
+
+            const resetApp = () => {
+                [loopVideo, introVideo].forEach(media => {
+                    try { media.pause(); media.currentTime = 0; } catch(e) {}
+                });
+                
+                successScreen.className = 'screen hidden';
+                triggerFinalBtn.removeAttribute('style');
+                loopVideo.loop = true;
+
+                currentAmountStr = '0';
+                updateDisplay();
+                switchScreen(keypadScreen);
+            };
+
+            // Event Listeners
+            keypad.addEventListener('click', (e) => {
+                const button = e.target.closest('.keypad-button');
+                if (button) handleKeyPress(button.dataset.key);
+            });
+
+            stealButton.addEventListener('click', () => {
+                if (stealButton.disabled) return;
+                confirmAmountSpan.textContent = getFormattedCurrency(currentAmountStr);
+                switchScreen(confirmationScreen);
+            });
+
+            cancelStealBtn.addEventListener('click', () => switchScreen(keypadScreen));
+
+            // 1. CONFIRM -> Start LOOPING video
+            confirmStealBtn.addEventListener('click', () => {
+                successAmount.textContent = getFormattedCurrency(currentAmountStr);
+                switchScreen(successScreen);
+                successScreen.className = 'screen state-looping';
+                
+                loopVideo.currentTime = 0;
+                loopVideo.play().catch(err => {
+                    console.warn('Looping media could not play:', err);
+                });
+            });
+
+            // 2. Click TRANSFER -> Immediately stop looping video and start intro video
+            triggerFinalBtn.addEventListener('click', () => {
+                triggerFinalBtn.style.opacity = 0;
+                triggerFinalBtn.style.pointerEvents = 'none';
+
+                loopVideo.pause();
+
+                successScreen.className = 'screen state-playing-intro';
+                
+                introVideo.currentTime = 0;
+                introVideo.play().catch(err => {
+                    console.warn('Intro media could not play:', err);
+                    playCheckmarkAnimation();
+                });
+            });
+
+            // 3. When INTRO video finishes -> Start CHECKMARK animation
+            introVideo.addEventListener('ended', () => {
+                playCheckmarkAnimation();
+            });
+
+            // 4. Click NEW TRANSFER -> Reset everything
+            resetBtn.addEventListener('click', resetApp);
+
+            // Init
+            updateDisplay();
+        });
+    </script>
+</body>
+</html>
